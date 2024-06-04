@@ -22,3 +22,7 @@ conda activate vlm_inspect
 ```shell
 pip install -r requirements.txt
 ```
+
+4. Download models
+
+Pole section matching model with the following link: [Pole section matching model](https://drive.google.com/drive/folders/1r5V7M_2KUKGcPh9tJ_J0rwfQn82hbC4B?usp=sharing)
