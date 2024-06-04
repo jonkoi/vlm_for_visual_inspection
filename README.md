@@ -23,6 +23,26 @@ conda activate vlm_inspect
 pip install -r requirements.txt
 ```
 
-4. Download models
+4. Download models and place them in current pwd
 
 Pole section matching model with the following link: [Pole section matching model](https://drive.google.com/drive/folders/1r5V7M_2KUKGcPh9tJ_J0rwfQn82hbC4B?usp=sharing)
+
+Default MiniCPM-V-2 model at: [MiniCPM-V-2](https://huggingface.co/openbmb/MiniCPM-V-2)
+
+MiniCPM-V-2 model fine-tuned on Insulator disc counting at: [MiniCPM-V-2 Insulator disc counting](https://drive.google.com/drive/folders/1Fz16KGa8N2SFz3mxJVlFoIwW0Y5w5XkZ?usp=sharing)
+
+Idefics2 model fine-tuned on Insulator disc counting at: [Idefics2 Insulator disc counting](https://drive.google.com/drive/folders/1ivA7diNCfvnT9nti39goLkHbKFr4IrrO?usp=sharing)
+
+## Demo
+
+To run the demo for Insulator disc counting, run the following command:
+
+```bash
+python ins_count_web.py.py
+```
+
+To run the demo for Pole section matching, run the following command:
+
+```bash
+python polesec_matching_web.py
+```
