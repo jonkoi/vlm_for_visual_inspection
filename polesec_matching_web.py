@@ -7,13 +7,6 @@ from transformers import AutoModel, AutoTokenizer, AutoProcessor, Idefics2ForCon
 import subprocess
 import gc
 
-# Define model paths
-model_paths = {
-    'MiniCPM-V 2.0 No LORA': './MiniCPM-V-2',
-    'MiniCPM-V 2.0': './ins_count_mini',
-    'IDEFICS2-8B': './ins_count_idefics',
-}
-
 # There is an insulator prominently displayed in the image. Answer strictly with a number. How many discs are there in the insulator?
 
 # Global variables to keep track of current model and name
@@ -37,54 +30,24 @@ def load_model(model_name, device, dtype):
         gc.collect()
         torch.cuda.empty_cache()
 
-        # Load the new model
-        if 'MiniCPM-V 2.0' in model_name:
-            model = AutoModel.from_pretrained(model_paths[model_name], trust_remote_code=True).to(dtype=dtype).to(device)
-            tokenizer = AutoTokenizer.from_pretrained(model_paths[model_name], trust_remote_code=True)
-            current_model = model
-            current_tokenizer_or_processor = tokenizer
-        elif 'IDEFICS2-8B' in model_name:
-            processor = AutoProcessor.from_pretrained("HuggingFaceM4/idefics2-8b",do_image_splitting=False)
-            bnb_config = BitsAndBytesConfig(
-                load_in_4bit=True,
-                bnb_4bit_quant_type="nf4",
-                bnb_4bit_compute_dtype=torch.float16
-            )
-            # model = Idefics2ForConditionalGeneration.from_pretrained(model_paths[model_name], torch_dtype=torch.float16, quantization_config=bnb_config).to(device)
-            model = Idefics2ForConditionalGeneration.from_pretrained("HuggingFaceM4/idefics2-8b", torch_dtype=dtype, trust_remote_code=True).to(device)
-            if 'No LORA' not in model_name:
-                model.load_adapter(model_paths["IDEFICS2-8B"])
-                model.enable_adapters()
-            current_model = model
-            current_tokenizer_or_processor = processor
-        else:
-            raise ValueError("Model not supported")
         
-        # Update the current model name
+        processor = AutoProcessor.from_pretrained("HuggingFaceM4/idefics2-8b",do_image_splitting=False)
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=torch.float16
+        )
+        # model = Idefics2ForConditionalGeneration.from_pretrained(model_paths[model_name], torch_dtype=torch.float16, quantization_config=bnb_config).to(device)
+        model = Idefics2ForConditionalGeneration.from_pretrained("HuggingFaceM4/idefics2-8b", torch_dtype=dtype, trust_remote_code=True).to(device)
+        if model_name == 'IDEFICS2-8B':
+            model.load_adapter('./polesec_match_idefics')
+            model.enable_adapters()
+        current_model = model
+        current_tokenizer_or_processor = processor
         current_model_name = model_name
     
     return current_model, current_tokenizer_or_processor
 
-# Chat function for MiniCPM-V 2.0
-def chat_minicpm_v2(img, msgs, params, model, tokenizer, device):
-    if img is None:
-        return -1, "Error, invalid image, please upload a new image", None, None
-    try:
-        image = img.convert('RGB')
-        answer, context, _ = model.chat(
-            image=image,
-            msgs=msgs,
-            context=None,
-            tokenizer=tokenizer,
-            **params
-        )
-        res = re.sub(r'(<box>.*</box>)', '', answer)
-        res = res.replace('<ref>', '').replace('</ref>', '').replace('<box>', '').replace('</box>', '')
-        return 0, res, None, None
-    except Exception as err:
-        print(err)
-        traceback.print_exc()
-        return -1, "Error, please retry", None, None
 
 # Inference function for IDEFICS2-8B
 def inference_idefics2(image, text, decoding_strategy, temperature, max_new_tokens, repetition_penalty, top_p, num_beams, model, processor, device):
@@ -115,9 +78,9 @@ def inference_idefics2(image, text, decoding_strategy, temperature, max_new_toke
     return generated_texts[0]
 
 # UI components
-model_selector = gr.Radio(label="Select Model", choices=["MiniCPM-V 2.0", "IDEFICS2-8B", "MiniCPM-V 2.0 No LORA", "IDEFICS2-8B No LORA"], value="MiniCPM-V 2.0")
+model_selector = gr.Radio(label="Select Model", choices=["No LORA", "IDEFICS2-8B"], value="MiniCPM-V 2.0")
 image_input = gr.Image(label="Upload your Image", type="pil")
-text_input = gr.Textbox(label="Prompt", value="The picture prominently displays an insulator. Provide a number only. How many discs are there in the insulator?")
+text_input = gr.Textbox(label="Prompt", value="In this image we have colored bounding boxes. Group the bounding boxes that cover the same part of the powerline towers.")
 submit_btn = gr.Button("Submit")
 output_text = gr.Textbox(label="Output")
 
@@ -145,13 +108,7 @@ def run_inference(model_name, image, text, temperature, max_new_tokens, repetiti
             new_image.paste(image, ((new_size - width) // 2, (new_size - height) // 2))
             image = new_image
         image = image.resize((224, 224))
-        
-    
-    if model_name == "MiniCPM-V 2.0":
-        params = {"sampling": False, "num_beams": num_beams, "repetition_penalty": repetition_penalty, "max_new_tokens": max_new_tokens} if decoding_strategy == "Beam Search" else {"sampling": True, "top_p": top_p, "temperature": temperature, "repetition_penalty": repetition_penalty, "max_new_tokens": max_new_tokens}
-        return chat_minicpm_v2(image, [{"role": "user", "content": text}], params, model, tokenizer_or_processor, device)[1]
-    elif model_name == "IDEFICS2-8B":
-        return inference_idefics2(image, text, decoding_strategy, temperature, max_new_tokens, repetition_penalty, top_p, num_beams, model, tokenizer_or_processor, device)
+    return inference_idefics2(image, text, decoding_strategy, temperature, max_new_tokens, repetition_penalty, top_p, num_beams, model, tokenizer_or_processor, device)
 
 # Define the layout and interactions
 with gr.Blocks() as demo:
