@@ -46,3 +46,9 @@ To run the demo for Pole section matching, run the following command:
 ```bash
 python polesec_matching_web.py
 ```
+
+The demo allows you to switch between MiniCPM-V-2 and Idefics2 models (with and without finetuning with LORA) for Insulator disc counting. For Pole section matching, only Idefics2 model is available. The decoding strategy can be switched between beam search and top p sampling.
+
+## UI Image
+
+![UI Image](./images/docs/ui.png)
