@@ -1,6 +1,6 @@
 # Vision Language Models for Visual Inspection
 
-This project is for the completion of the Special curriculum FYS-8805 Generative AI. The topic of this project is the implementation of vision-language models to perform visual question answering on two tasks: Insulator disc counting and pole section matching.
+This project is for the completion of the Special curriculum FYS-8805 Generative AI. The topic of this project is the implementation of vision-language models to perform visual question answering on two tasks: Insulator disc counting and pole section matching. We provide example test images to try. 
 
 For more details, please refer to the project report.
 ## Installation
